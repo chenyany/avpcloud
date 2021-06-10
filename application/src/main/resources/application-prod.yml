@@ -1,0 +1,26 @@
+server:
+  port: 8083
+
+client:
+  cache: APP00000000000001:VIN00000000000001,APP00000000000002:VIN00000000000002,APP00000000000003:VIN00000000000003,APP00000000000004:VIN00000000000004,APP00000000000005:VIN00000000000005
+
+
+file:
+  download:
+    size: 7340032
+  map:
+    dir: /data/avp/mapdata/
+
+timeout:
+  period: 600
+
+
+avp:
+  log:
+    path: /data/avp/cloud/logs
+
+env:
+  cpu:
+    count: 2
+
+host: 113.209.131.13:8083

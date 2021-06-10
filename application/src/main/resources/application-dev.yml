@@ -1,0 +1,26 @@
+server:
+  port: 8080
+
+client:
+  cache: APP00000000000001:VIN00000000000001,APP00000000000002:VIN00000000000002,APP00000000000003:VIN00000000000003,APP00000000000004:VIN00000000000004,APP00000000000005:VIN00000000000005
+
+
+file:
+  download:
+    size: 7340032
+  map:
+    dir:  E:/map/
+
+
+timeout:
+  period: 60
+
+avp:
+  log:
+    path: /avp/cloud/logs
+
+env:
+  cup:
+    core: 8
+
+host: localhost:8080

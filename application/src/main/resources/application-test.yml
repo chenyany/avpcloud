@@ -1,0 +1,28 @@
+server:
+  port: 9999
+
+#缓存的客户端对应关系
+client:
+  cache: APP00000000000001:VIN00000000000001,APP00000000000002:VIN00000000000002,APP00000000000003:VIN00000000000003,APP00000000000004:VIN00000000000004,APP00000000000005:VIN00000000000005
+
+#数据文件位置
+file:
+  download:
+    size: 7340032
+  map:
+    dir:  /home/avp/cloud/mapdata
+
+#心跳超时 秒
+timeout:
+  period: 600
+
+#日志文件位置
+avp:
+  log:
+    path: /home/avp/cloud/logs
+
+env:
+  cup:
+    count: 6
+
+host: 172.19.173.174:9999

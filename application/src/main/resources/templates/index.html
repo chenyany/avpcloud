@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.springframework.org/schema/mvc">
+<head>
+    <meta charset="UTF-8">
+    <!-- import Vue before Element -->
+    <script src="/vue/dist/vue.js"></script>
+    <!-- import JavaScript -->
+    <script src="/element-ui/lib/index.js"></script>
+    <script src="/echart/echarts.min.js"></script>
+    <!-- import CSS -->
+    <link rel="stylesheet" href="/element-ui/lib/theme-chalk/index.css">
+    <style type="text/css">
+        .el-header {
+            background-color: #B3C0D1;
+            color: #333;
+            line-height: 60px;
+            text-align: center;
+        }
+
+        .el-aside {
+            color: #333;
+        }
+    </style>
+</head>
+<body>
+<div id="app">
+    <el-container style="height: 800px; border: 1px solid #eee">
+        <el-header style="font-size: 12px">header</el-header>
+        <el-container>
+            <el-aside width="200px" style="background-color: rgb(238, 241, 246)">
+                <el-menu
+                        default-active="2"
+                        class="el-menu-vertical-demo">
+                    <el-menu-item index="1">
+                        <i class="el-icon-message"></i>
+                        <span slot="title">消息数量</span>
+                    </el-menu-item>
+                    <el-menu-item index="2">
+                        <i class="el-icon-cpu"></i>
+                        <span slot="title">服务器资源</span>
+                    </el-menu-item>
+                </el-menu>
+            </el-aside>
+            <el-main>
+                <el-row :gutter="20">
+                    <el-col :span="10">
+                        <!--prop 驼峰命名 组件上对应'a-b'-->
+                        <chart :series-data="seriesData"></chart>
+                    </el-col>
+                    <el-col :span="10" :offset="4">...</el-col>
+                </el-row>
+            </el-main>
+        </el-container>
+    </el-container>
+</div>
+</body>
+<script th:inline="javascript" >
+    const host = [[${host}]]
+</script>
+<script>
+    Vue.component("chart", {
+        template: '<div id="main" style="width: 100%;height:400px;"></div>',
+        props: {
+            seriesData: {
+                type: Object,
+                required: true
+            }
+        },
+        watch: {
+            seriesData: {
+                handler(newVal, oldVal) {
+                    this.req = newVal.req;
+                    this.res = newVal.res;
+                    this.init();
+                },
+                deep: true
+            }
+        },
+        mounted() {
+            this.init();
+        },
+        data: function () {
+            return {
+                cat: ['CORE', 'DISPATCH', 'DATA', 'HEART_BEAT'],
+                req: [0,0,0,0],
+                res: [0,0,0,0]
+            }
+        },
+        methods: {
+            init() {
+                let barChart = echarts.init(document.getElementById('main'));
+                let option = {
+                    tooltip: {
+                        trigger: 'axis',
+                        axisPointer: {            // 坐标轴指示器，坐标轴触发有效
+                            type: 'shadow'        // 默认为直线，可选为：'line' | 'shadow'
+                        }
+                    },
+                    legend: {
+                        data: ['请求', '响应']
+                    },
+                    grid: {
+                        left: '3%',
+                        right: '4%',
+                        bottom: '3%',
+                        containLabel: true
+                    },
+                    xAxis: [
+                        {
+                            type: 'value',
+                            axisLabel:{
+                                formatter:(val) => val < 0 ? -val : val
+                            },
+                            min: -100,
+                            max: 100
+                        }
+                    ],
+                    yAxis: [
+                        {
+                            type: 'category',
+                            axisTick: {
+                                show: false
+                            },
+                            data: this.cat
+                        }
+                    ],
+                    series: [
+                        {
+                            name: '请求',
+                            type: 'bar',
+                            stack: '数量',
+                            label: {
+                                show: true,
+                                formatter: (p) => -p.data
+                            },
+                            emphasis: {
+                                focus: 'series'
+                            },
+                            data: this.req
+                        },
+                        {
+                            name: '响应',
+                            type: 'bar',
+                            stack: '数量',
+                            label: {
+                                show: true,
+                            },
+                            emphasis: {
+                                focus: 'series'
+                            },
+                            data: this.res
+                        }
+                    ]
+                };
+                barChart.setOption(option);
+                window.addEventListener("resize", () => {
+                    barChart.resize();
+                });
+            },
+        }
+    })
+
+
+    new Vue({
+        el: '#app',
+        data() {
+            return {
+                path: "ws://"+host+"/monitor",
+                socket: "",
+                name: "消息数量",
+                seriesData: {req:[0,0,0,0],res:[0,0,0,0]},
+                topics: ['CORE', 'DISPATCH', 'DATA', 'HEART_BEAT']
+            }
+        },
+        created() {
+            this.initWebsocket();
+        },
+        methods: {
+            initWebsocket() {
+                if (typeof (WebSocket) === "undefined") {
+                    alert("您的浏览器不支持socket")
+                } else {
+                    // 实例化socket
+                    this.socket = new WebSocket(this.path)
+                    // 监听socket连接
+                    this.socket.onopen = this.open
+                    // 监听socket错误信息
+                    this.socket.onerror = this.error
+                    // 监听socket消息
+                    this.socket.onmessage = this.message
+                }
+
+            },
+            open() {
+                this.start();
+                console.log("连接成功");
+            },
+            message(msg) {
+
+                let status = JSON.parse(msg.data);
+                let req = new Array();
+                let res = new Array();
+                for(let i in this.topics){
+                    let topic = this.topics[i];
+                    let reqCnt = status["AVP_" + topic];
+                    req.push(reqCnt ? (0 - reqCnt) : 0);
+                    let resCnt = status["AVP_" + topic + "_FORWARD"];
+                    res.push(resCnt ? resCnt : 0);
+                }
+                this.seriesData.req = req;
+                this.seriesData.res = res;
+            },
+            close() {
+                console.log("socket已经关闭");
+            },
+            error(e) {
+                console.log("连接错误");
+                console.log(e);
+            },
+            start() {
+                this.socket.send('{"start":1}');
+            },
+
+
+        },
+        destroyed() {
+            this.socket.onclose = this.close
+        }
+    })
+</script>
+</html>
